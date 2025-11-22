@@ -62,6 +62,7 @@ const (
 	IDEVICE_DEVICE_PAIRED DeviceEventType = C.IDEVICE_DEVICE_PAIRED // device completed pairing process
 )
 
+// Device The device handle.
 type Device struct {
 	dev *C.idevice_t
 }
@@ -176,18 +177,23 @@ func (d *Device) Version() int {
 	return int(C.idevice_get_device_version(*d.dev))
 }
 
+// DeviceInfo Device information returned by #idevice_get_device_list_extended API
 type DeviceInfo struct {
 	UDID     string
 	ConnType DeviceConnType
 	ConnData unsafe.Pointer
 }
 
+// DeviceEvent
+// event data structure
+// Provides information about the occurred event.
 type DeviceEvent struct {
 	EventType DeviceEventType
 	UDID      string
 	ConnType  DeviceConnType
 }
 
+// DeviceConnection The connection handle.
 type DeviceConnection struct {
 	conn *C.idevice_connection_t
 }
@@ -234,6 +240,10 @@ func (dc *DeviceConnection) Receive(buf []byte) (int, error) {
 	return int(cReceive), nil
 }
 
+// ReceiveWithTimeout
+// Receive data from a device via the given connection.
+// This function will return after the given timeout even if no data has been
+// received.
 func (dc *DeviceConnection) ReceiveWithTimeout(buf []byte, timeout int) (int, error) {
 	var cReceive C.uint32_t
 	cBuf := (*C.char)(unsafe.Pointer(&buf[0]))
@@ -278,6 +288,7 @@ func (dc *DeviceConnection) Close() error {
 	return checkErr(err)
 }
 
+// DeviceSubscriptionContext Event subscription context type
 type DeviceSubscriptionContext C.idevice_subscription_context_t
 
 // LibimobiledeviceVersion Returns a static string of the libimobiledevice version.
