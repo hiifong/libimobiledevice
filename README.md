@@ -21,7 +21,7 @@ sudo apt-get install \
 
 ## Install
 ```shell
-go get module github.com/hiifong/libimobiledevice
+go get github.com/hiifong/libimobiledevice
 ```
 
 ## Usage
