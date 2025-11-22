@@ -4,40 +4,41 @@ import (
 	"fmt"
 
 	"github.com/hiifong/libimobiledevice"
+	"github.com/hiifong/libimobiledevice/device"
 )
 
 func main() {
 	fmt.Println("Hello World")
 	libimobiledevice.SetDebugLevel(true)
-	list, err := libimobiledevice.GetDeviceList()
+	list, err := device.GetDeviceList()
 	if err != nil {
 		fmt.Println(err)
 	}
 	fmt.Println(list)
 
-	listExtended, err := libimobiledevice.GetDeviceListExtended()
+	listExtended, err := device.GetDeviceListExtended()
 	if err != nil {
 		fmt.Println(err)
 	}
 	fmt.Println(listExtended)
 
-	device, err := libimobiledevice.NewDevice("00008140-001C0C693C08801C")
+	dev, err := device.NewDevice("00008140-001C0C693C08801C")
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(device)
+	fmt.Println(dev)
 
-	fmt.Println("udid: ", device.UDID())
+	fmt.Println("udid: ", dev.UDID())
 
-	fmt.Println("version: ", device.Version())
+	fmt.Println("version: ", dev.Version())
 
-	device, err = libimobiledevice.NewDeviceWithOptions("00008140-001C0C693C08801C", libimobiledevice.IDEVICE_LOOKUP_USBMUX)
+	dev, err = device.NewDeviceWithOptions("00008140-001C0C693C08801C", device.IDEVICE_LOOKUP_USBMUX)
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(device)
+	fmt.Println(dev)
 
-	connect, err := libimobiledevice.Connect(device, 80)
+	connect, err := device.Connect(dev, 80)
 	if err != nil {
 		fmt.Println(err)
 	}
