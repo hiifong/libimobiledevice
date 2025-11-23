@@ -31,39 +31,54 @@ func main() {
 
 	fmt.Println("version: ", dev.Version())
 
-	dev, err = libimobiledevice.NewDeviceWithOptions("00008140-001C0C693C08801C", libimobiledevice.IDEVICE_LOOKUP_USBMUX)
+	client, err := libimobiledevice.NewLockdowndClient(dev, "test")
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(dev)
+	fmt.Println(client)
+	queryType, err := client.QueryType()
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(queryType)
 
-	connect, err := libimobiledevice.Connect(dev, 2222)
+	value, err := client.GetValue("", "DeviceName")
 	if err != nil {
 		fmt.Println(err)
 	}
-	defer func() {
-		err := connect.Close()
-		if err != nil {
-			fmt.Println(err)
-		}
-	}()
+	defer value.Free()
+	fmt.Println(value)
 
-	n, err := connect.Send([]byte("Hello World"))
+	err = client.SetValue("", "test", nil)
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(n)
 
-	buf := make([]byte, 1024)
-	n, err = connect.Receive(buf)
+	service, err := client.StartService("ssh")
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(string(buf[:n]))
+	fmt.Println(service)
 
-	n, err = connect.ReceiveWithTimeout(buf, 10)
+	service, err = client.StartServiceWithEscrowBag("ssh")
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(string(buf[:n]))
+	fmt.Println(service)
+
+	session, err := client.StartSession("", "", true)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(session)
+
+	err = client.Pair(nil)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = client.Unpair(nil)
+	if err != nil {
+		fmt.Println(err)
+	}
 }

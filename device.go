@@ -1,4 +1,4 @@
-package device
+package libimobiledevice
 
 /*
 #include <stdlib.h>
@@ -16,7 +16,7 @@ func (e DeviceErr) Error() string {
 	return C.GoString(C.idevice_strerror(C.idevice_error_t(e)))
 }
 
-func checkErr(err C.idevice_error_t) error {
+func checkDeviceErr(err C.idevice_error_t) error {
 	if err != C.IDEVICE_E_SUCCESS {
 		return DeviceErr(err)
 	}
@@ -64,15 +64,15 @@ const (
 
 // Device The device handle.
 type Device struct {
-	dev *C.idevice_t
+	ptr *C.idevice_t
 }
 
 func (d *Device) Device() C.idevice_t {
-	if d == nil || d.dev == nil {
+	if d == nil || d.ptr == nil {
 		return nil
 	}
 
-	return *d.dev
+	return *d.ptr
 }
 
 // GetDeviceList Get a list of UDIDs of currently available devices (USBMUX devices only).
@@ -81,7 +81,7 @@ func GetDeviceList() ([]string, error) {
 	var cCount C.int
 
 	err := C.idevice_get_device_list(&cDevices, &cCount)
-	if err := checkErr(err); err != nil {
+	if err := checkDeviceErr(err); err != nil {
 		return nil, err
 	}
 	defer C.idevice_device_list_free(cDevices)
@@ -103,7 +103,7 @@ func GetDeviceListExtended() ([]DeviceInfo, error) {
 	var cCount C.int
 
 	err := C.idevice_get_device_list_extended(&cDevices, &cCount)
-	if err := checkErr(err); err != nil {
+	if err := checkDeviceErr(err); err != nil {
 		return nil, err
 	}
 	defer C.idevice_device_list_extended_free(cDevices)
@@ -131,7 +131,7 @@ func NewDevice(udid string) (*Device, error) {
 	defer C.free(unsafe.Pointer(cUDID))
 
 	err := C.idevice_new(&cDevice, cUDID)
-	if err := checkErr(err); err != nil {
+	if err := checkDeviceErr(err); err != nil {
 		return nil, err
 	}
 
@@ -146,7 +146,7 @@ func NewDeviceWithOptions(udid string, opt DeviceOpt) (*Device, error) {
 	defer C.free(unsafe.Pointer(cUDID))
 
 	err := C.idevice_new_with_options(&cDevice, cUDID, C.enum_idevice_options(opt))
-	if err := checkErr(err); err != nil {
+	if err := checkDeviceErr(err); err != nil {
 		return nil, err
 	}
 
@@ -155,23 +155,23 @@ func NewDeviceWithOptions(udid string, opt DeviceOpt) (*Device, error) {
 
 // Close free device
 func (d *Device) Close() error {
-	if d == nil || d.dev == nil {
+	if d == nil || d.ptr == nil {
 		return nil
 	}
-	err := C.idevice_free(*d.dev)
-	return checkErr(err)
+	err := C.idevice_free(*d.ptr)
+	return checkDeviceErr(err)
 }
 
 // UDID Gets the Unique Device ID for the device.
 func (d *Device) UDID() string {
-	if d == nil || d.dev == nil {
+	if d == nil || d.ptr == nil {
 		return ""
 	}
 
 	var cUdid *C.char
 	defer C.free(unsafe.Pointer(cUdid))
 
-	err := checkErr(C.idevice_get_udid(*d.dev, &cUdid))
+	err := checkDeviceErr(C.idevice_get_udid(*d.ptr, &cUdid))
 	if err != nil {
 		return ""
 	}
@@ -180,11 +180,11 @@ func (d *Device) UDID() string {
 }
 
 func (d *Device) Version() int {
-	if d == nil || d.dev == nil {
+	if d == nil || d.ptr == nil {
 		return 0
 	}
 
-	return int(C.idevice_get_device_version(*d.dev))
+	return int(C.idevice_get_device_version(*d.ptr))
 }
 
 // DeviceInfo Device information returned by #idevice_get_device_list_extended API
@@ -210,14 +210,14 @@ type DeviceConnection struct {
 
 // Connect Set up a connection to the given device.
 func Connect(device *Device, port int) (*DeviceConnection, error) {
-	if device == nil || device.dev == nil {
+	if device == nil || device.ptr == nil {
 		return nil, nil
 	}
 
 	var cConn C.idevice_connection_t
 
-	err := C.idevice_connect(*device.dev, C.uint16_t(port), &cConn)
-	if err := checkErr(err); err != nil {
+	err := C.idevice_connect(*device.ptr, C.uint16_t(port), &cConn)
+	if err := checkDeviceErr(err); err != nil {
 		return nil, err
 	}
 
@@ -235,7 +235,7 @@ func (dc *DeviceConnection) Send(data []byte) (int, error) {
 	cLen := C.uint32_t(len(data))
 
 	err := C.idevice_connection_send(C.idevice_connection_t(*dc.conn), cData, cLen, &cSent)
-	if err := checkErr(err); err != nil {
+	if err := checkDeviceErr(err); err != nil {
 		return 0, err
 	}
 
@@ -255,7 +255,7 @@ func (dc *DeviceConnection) Receive(buf []byte) (int, error) {
 	cLen := C.uint32_t(len(buf))
 
 	err := C.idevice_connection_receive(C.idevice_connection_t(*dc.conn), cBuf, cLen, &cReceive)
-	if err := checkErr(err); err != nil {
+	if err := checkDeviceErr(err); err != nil {
 		return 0, err
 	}
 
@@ -276,7 +276,7 @@ func (dc *DeviceConnection) ReceiveWithTimeout(buf []byte, timeout int) (int, er
 	cLen := C.uint32_t(len(buf))
 
 	err := C.idevice_connection_receive_timeout(C.idevice_connection_t(*dc.conn), cBuf, cLen, &cReceive, C.uint32_t(timeout))
-	if err := checkErr(err); err != nil {
+	if err := checkDeviceErr(err); err != nil {
 		return 0, err
 	}
 
@@ -290,7 +290,7 @@ func (dc *DeviceConnection) EnableSSL() error {
 	}
 
 	err := C.idevice_connection_enable_ssl(*dc.conn)
-	return checkErr(err)
+	return checkDeviceErr(err)
 }
 
 // DisableSSL Disable SSL for the given connection.
@@ -300,7 +300,7 @@ func (dc *DeviceConnection) DisableSSL() error {
 	}
 
 	err := C.idevice_connection_disable_ssl(*dc.conn)
-	return checkErr(err)
+	return checkDeviceErr(err)
 }
 
 // DisableBypassSSL Disable bypass SSL for the given connection without sending out terminate messages.
@@ -313,7 +313,7 @@ func (dc *DeviceConnection) DisableBypassSSL(bypass int) error {
 
 	err := C.idevice_connection_disable_bypass_ssl(*dc.conn, cSSLBypass)
 
-	return checkErr(err)
+	return checkDeviceErr(err)
 }
 
 // Close Disconnect from the device and clean up the connection structure.
@@ -323,7 +323,7 @@ func (dc *DeviceConnection) Close() error {
 	}
 
 	err := C.idevice_disconnect(*dc.conn)
-	return checkErr(err)
+	return checkDeviceErr(err)
 }
 
 // DeviceSubscriptionContext Event subscription context type
