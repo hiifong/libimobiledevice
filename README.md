@@ -1,6 +1,6 @@
 # libimobiledevice-go
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/hiifong/libimobiledevice.svg)](https://pkg.go.dev/github.com/hiifong/libimobiledevice)
+[![Go Reference](https://pkg.go.dev/badge/github.com/hiifong/libimobiledevice.svg)](https://pkg.go.dev/github.com/hiifong/libimobiledevice) [![Go Report Card](https://goreportcard.com/badge/github.com/hiifong/libimobiledevice)](https://goreportcard.com/report/github.com/hiifong/libimobiledevice)
 
 > WIP: Go bindings for libimobiledevice
 
