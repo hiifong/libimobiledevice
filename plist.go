@@ -4,6 +4,7 @@ package libimobiledevice
 #include <plist/plist.h>
 */
 import "C"
+import "unsafe"
 
 // PListType The enumeration of plist node types.
 type PListType int
@@ -127,8 +128,170 @@ type PList struct {
 	ptr C.plist_t
 }
 
+// Creation & Destruction
+
+// NewPListDict Create a new root plist_t type #PLIST_DICT
+func NewPListDict() *PList {
+	return &PList{C.plist_new_dict()}
+}
+
+// NewPListArray Create a new root plist_t type #PLIST_ARRAY
+func NewPListArray() *PList {
+	return &PList{C.plist_new_array()}
+}
+
+// NewPListString Create a new plist_t type #PLIST_STRING
+func NewPListString(val string) *PList {
+	cVal := C.CString(val)
+	defer C.free(unsafe.Pointer(cVal))
+
+	return &PList{C.plist_new_string(cVal)}
+}
+
+// NewPListBool Create a new plist_t type #PLIST_BOOLEAN
+func NewPListBool(val bool) *PList {
+	var cVal C.uint8_t
+	if val {
+		cVal = C.uint8_t(1)
+	} else {
+		cVal = C.uint8_t(0)
+	}
+	return &PList{C.plist_new_bool(cVal)}
+}
+
+// NewPListUint Create a new plist_t type #PLIST_INT with an unsigned integer value
+func NewPListUint(val uint) *PList {
+	return &PList{C.plist_new_uint(C.uint64_t(val))}
+}
+
+// NewPListInt Create a new plist_t type #PLIST_INT with a signed integer value
+func NewPListInt(val int) *PList {
+	return &PList{C.plist_new_int(C.int64_t(val))}
+}
+
+// NewPListReal Create a new plist_t type #PLIST_REAL
+func NewPListReal(val float64) *PList {
+	return &PList{C.plist_new_real(C.double(val))}
+}
+
+// NewPListData Create a new plist_t type #PLIST_DATA
+func NewPListData(val string) *PList {
+	cVal := C.CString(val)
+	cLen := C.uint64_t(len(val))
+	defer C.free(unsafe.Pointer(cVal))
+	return &PList{C.plist_new_data(cVal, cLen)}
+}
+
+// NewPListUnixDate Create a new plist_t type #PLIST_DATE
+func NewPListUnixDate(sec int) *PList {
+	return &PList{C.plist_new_unix_date(C.int64_t(sec))}
+}
+
+// NewPListUid Create a new plist_t type #PLIST_UID
+func NewPListUid(val uint) *PList {
+	return &PList{C.plist_new_uid(C.uint64_t(val))}
+}
+
+// NewPListNull Create a new plist_t type #PLIST_NULL
+func NewPListNull() *PList {
+	return &PList{C.plist_new_null()}
+}
+
+// Free plist
 func (l *PList) Free() {
 	if l != nil && l.ptr != nil {
 		C.plist_free(l.ptr)
 	}
+}
+
+// Array functions
+
+// GetSize Get size of a #PLIST_ARRAY node.
+func (l *PList) GetSize() uint {
+	if l == nil || l.ptr == nil {
+		return 0
+	}
+	return uint(C.plist_array_get_size(l.ptr))
+}
+
+// GetArrayItem Get the nth item in a #PLIST_ARRAY node.
+func (l *PList) GetArrayItem(n uint) *PList {
+	if l == nil || l.ptr == nil {
+		return nil
+	}
+
+	var cPlist C.plist_t
+	cPlist = C.plist_array_get_item(l.ptr, C.uint32_t(n))
+	return &PList{cPlist}
+}
+
+// GetArrayItemIndex Get the index of an item. item must be a member of a #PLIST_ARRAY node.
+func (l *PList) GetArrayItemIndex(item *PList) uint {
+	if l == nil || l.ptr == nil || item == nil || item.ptr == nil {
+		return 0
+	}
+
+	return uint(C.plist_array_get_item_index(l.ptr, item.ptr))
+}
+
+// SetArrayItem Set the nth item in a #PLIST_ARRAY node.
+// The previous item at index n will be freed using #plist_free
+func (l *PList) SetArrayItem(item *PList, n uint) {
+	if l == nil || l.ptr == nil || item == nil || item.ptr == nil {
+		return
+	}
+
+	C.plist_array_set_item(l.ptr, item.ptr, C.uint32_t(n))
+}
+
+// AppendArrayItem Append a new item at the end of a #PLIST_ARRAY node.
+func (l *PList) AppendArrayItem(item *PList) {
+	if l == nil || l.ptr == nil || item == nil || item.ptr == nil {
+		return
+	}
+
+	C.plist_array_append_item(l.ptr, item.ptr)
+}
+
+// InsertArrayItem Insert a new item at position n in a #PLIST_ARRAY node.
+func (l *PList) InsertArrayItem(item *PList, n uint) {
+	if l == nil || l.ptr == nil || item == nil || item.ptr == nil {
+		return
+	}
+
+	C.plist_array_insert_item(l.ptr, item.ptr, C.uint32_t(n))
+}
+
+// RemoveArrayItem Remove an existing position in a #PLIST_ARRAY node.
+// Removed position will be freed using #plist_free.
+func (l *PList) RemoveArrayItem(n uint) {
+	if l == nil || l.ptr == nil {
+		return
+	}
+
+	C.plist_array_remove_item(l.ptr, C.uint32_t(n))
+}
+
+// ArrayItemRemove Remove a node that is a child node of a #PLIST_ARRAY node.
+// node will be freed using #plist_free.
+func (l *PList) ArrayItemRemove() {
+	if l == nil || l.ptr == nil {
+		return
+	}
+
+	C.plist_array_item_remove(l.ptr)
+}
+
+// NewArrayIter Create an iterator of a #PLIST_ARRAY node.
+// The allocated iterator should be freed with the standard free function.
+func (l *PList) NewArrayIter() C.plist_array_iter {
+	var cIter C.plist_array_iter
+	C.plist_array_new_iter(l.ptr, &cIter)
+	return &cIter
+}
+
+// ArrayNextItem Increment iterator of a #PLIST_ARRAY node.
+func (l *PList) ArrayNextItem() {
+	// TODO
+	return
 }
